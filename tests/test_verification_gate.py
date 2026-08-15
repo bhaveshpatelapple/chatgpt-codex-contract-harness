@@ -51,6 +51,21 @@ class VerificationGateTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "verification must pass"):
             self.state_machine.complete_step(PLAN, failed, 2)
 
+    def test_verification_output_is_persisted_for_reload_evidence(self):
+        failed = self.state_machine.run_verification(
+            PLAN,
+            active_state(),
+            2,
+            [
+                sys.executable,
+                "-c",
+                "import sys; print('observed mismatch'); print('details', file=sys.stderr); raise SystemExit(1)",
+            ],
+        )
+
+        self.assertEqual(failed["verification"]["stdout"], "observed mismatch\n")
+        self.assertEqual(failed["verification"]["stderr"], "details\n")
+
     def test_passed_verification_allows_completion(self):
         passed = self.state_machine.run_verification(
             PLAN,

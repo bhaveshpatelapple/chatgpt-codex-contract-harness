@@ -23,6 +23,8 @@
       "tests",
       "-v"
     ],
-    "exit_code": 0
+    "exit_code": 0,
+    "stdout": "",
+    "stderr": "Ran 20 tests in 3.728s\n\nOK\n"
   }
 }

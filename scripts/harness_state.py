@@ -81,6 +81,8 @@ def run_verification(plan, state, step_id, command):
         "status": status,
         "command": command,
         "exit_code": result.returncode,
+        "stdout": result.stdout,
+        "stderr": result.stderr,
     }
     updated["phase"] = "DIFF_REVIEW" if status == "PASSED" else "VERIFY_FAILED"
     return updated
