@@ -1,0 +1,19 @@
+{
+  "amendment": 1,
+  "base_commit": "673c501443f769b28b075924eb0b48afa2375050",
+  "excluded_protocol_attempt": {
+    "disabled_outcomes_observed": 3,
+    "enabled_outcomes_observed": 0,
+    "reason": "store_task_skill_mismatch"
+  },
+  "primary_endpoint": "first_attempt_passed",
+  "randomization_seed": 20260815,
+  "units": [
+    {"attempts": 1, "condition": "enabled", "final_verification": "PASSED", "first_verification": "PASSED", "skill_id": "skill_8efb8f860b7499a01208", "unit": 1},
+    {"attempts": 2, "condition": "disabled", "final_verification": "PASSED", "first_verification": "FAILED", "skill_id": null, "unit": 2},
+    {"attempts": 1, "condition": "enabled", "final_verification": "PASSED", "first_verification": "PASSED", "skill_id": "skill_8efb8f860b7499a01208", "unit": 3},
+    {"attempts": 2, "condition": "disabled", "final_verification": "PASSED", "first_verification": "FAILED", "skill_id": null, "unit": 4},
+    {"attempts": 2, "condition": "disabled", "final_verification": "PASSED", "first_verification": "FAILED", "skill_id": null, "unit": 5},
+    {"attempts": 1, "condition": "enabled", "final_verification": "PASSED", "first_verification": "PASSED", "skill_id": "skill_8efb8f860b7499a01208", "unit": 6}
+  ]
+}

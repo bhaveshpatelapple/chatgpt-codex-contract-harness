@@ -57,7 +57,7 @@ def run_learning_demo(root:Path):
         "repair_context_layers":list(repair_context.layers),"learning_writes_orchestrated":learned in reopened.episode_store.all() and promoted.skill in reopened.skill_registry.all(),"ablations":ablations,"bounded_context":bounds}
 
 def main():
-    parser=argparse.ArgumentParser(); parser.add_argument("command",choices=("run","inspect","reuse")); parser.add_argument("root",nargs="?"); parser.add_argument("input",nargs="?"); parser.add_argument("expected",nargs="?"); args=parser.parse_args()
+    parser=argparse.ArgumentParser(); parser.add_argument("command",choices=("run","inspect","reuse")); parser.add_argument("root",nargs="?"); parser.add_argument("input",nargs="?"); parser.add_argument("expected",nargs="?"); parser.add_argument("--disable-l5",action="store_true"); args=parser.parse_args()
     if args.command=="run":
         if args.root: proof=run_learning_demo(Path(args.root))
         else:
@@ -68,12 +68,14 @@ def main():
         print(json.dumps({"episode_ids":[e.id for e in episodes.all()],"skill_ids":[s.id for s in skills.all()],"run_id":run.run.id},sort_keys=True))
     else:
         root=Path(args.root); learned=LearningOrchestrator.open(root,ROOT/".harness/contract.yaml",ROOT/".harness/contract.lock")
-        triggered=learned.skill_registry.trigger(query(args.input,"replace","skill"))
-        if not triggered.hits: raise HarnessError("SKILL_NOT_TRIGGERED")
-        skill=triggered.hits[0].record; output=args.input
-        if "replace wrong with hello" in skill.procedure: output=output.replace("wrong","hello")
+        triggered=() if args.disable_l5 else learned.skill_registry.trigger(query(args.input,"replace","skill")).hits
+        if not args.disable_l5 and not triggered: raise HarnessError("SKILL_NOT_TRIGGERED")
+        skill=None if args.disable_l5 else triggered[0].record; output=args.input
+        if skill and "replace wrong with hello" in skill.procedure: output=output.replace("wrong","hello")
         fresh=LearningOrchestrator(root/"cross-process-reuse",ROOT/".harness/contract.yaml",ROOT/".harness/contract.lock")
-        run=fresh.start({"task_kind":"replace","input":output,"expected":args.expected}); receipt=fresh.verify(run.active_attempt_id,output)
-        if receipt.status==VerificationStatus.PASSED: fresh.advance(receipt)
-        print(json.dumps({"verification":receipt.status.value,"attempts":len(fresh.run.attempts),"skill_id":skill.id},sort_keys=True))
+        run=fresh.start({"task_kind":"replace","input":output,"expected":args.expected}); first=fresh.verify(run.active_attempt_id,output); final=first
+        if first.status==VerificationStatus.FAILED:
+            repaired=fresh.repair(first,args.expected); final=fresh.verify(repaired.id,repaired.output)
+        fresh.advance(final)
+        print(json.dumps({"verification":final.status.value,"first_verification":first.status.value,"final_verification":final.status.value,"attempts":len(fresh.run.attempts),"skill_id":None if skill is None else skill.id},sort_keys=True))
 if __name__=="__main__": main()
