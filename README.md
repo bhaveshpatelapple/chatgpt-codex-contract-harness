@@ -14,3 +14,9 @@ Requires Python 3.11 or newer. From the repository root, run:
 ```text
 python -m unittest discover -s tests -v
 ```
+
+Validate that the locked contract has the required schema and has not changed:
+
+```text
+python scripts/harness_verify.py
+```
