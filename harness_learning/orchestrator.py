@@ -27,7 +27,7 @@ class LearningOrchestrator:
         temporary.replace(path)
     @classmethod
     def open(cls,root,contract_path,lock_path,adapter=None,composer=None,episode_store=None,skill_registry=None):
-        obj=cls(root,contract_path,lock_path,adapter,composer,episode_store,skill_registry); path=Path(root)/"runs.json"
+        obj=cls(root,contract_path,lock_path,adapter,composer,episode_store,skill_registry); obj._contract(); path=Path(root)/"runs.json"
         try: data=json.loads(path.read_text(encoding="utf-8"))
         except (OSError,json.JSONDecodeError) as exc: raise HarnessError("STORE_CORRUPT",str(exc)) from exc
         if data.get("schema_version")!=1 or data.get("kind")!="runs": raise HarnessError("STORE_SCHEMA")
