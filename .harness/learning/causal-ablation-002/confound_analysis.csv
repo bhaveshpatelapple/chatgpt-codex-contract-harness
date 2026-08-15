@@ -1,0 +1,11 @@
+variable,role,control,uncontrolled_consequence
+fixture bytes,confounder,committed source plus pre-trial digest check,different defect or tests could drive outcome
+task text,confounder,fixed literal task,different instructions could drive patch behavior
+verifier command,confounder,fixed full unittest command,different acceptance criteria could drive pass rate
+base store,confounder,same persisted store for every unit,different learned knowledge could drive outcome
+base code,confounder,one committed revision for every unit,runner drift could drive outcome
+interpreter,confounder,same sys.executable for every unit,runtime differences could alter execution
+process state,confounder,new process and work copy per unit,carry-over could mimic an L5 effect
+process order,nuisance,seeded randomized allocation,systematic drift could align with treatment
+retrieved skill,mediator,record only and do not adjust,adjustment would remove part of the treatment effect
+attempted patch,mediator,record only and do not adjust,adjustment would remove part of the treatment effect
