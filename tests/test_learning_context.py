@@ -14,6 +14,8 @@ class ContextTests(unittest.TestCase):
         for name,layer in manifest.layers.items():
             self.assertEqual(name,layer.layer_type); self.assertLessEqual(layer.used_items,layer.item_budget); self.assertLessEqual(layer.used_bytes,layer.byte_budget)
         self.assertLessEqual(manifest.used_bytes,manifest.total_byte_budget)
+        self.assertEqual((episode(1),), manifest.selected_records["L4"])
+        self.assertEqual((skill(),), manifest.selected_records["L5"])
     def test_long_histories_remain_bounded(self):
         for size in (10,100,1000):
             m=self.composer.compose(self.request(),(),tuple(episode(n) for n in range(1,size+1)),(skill(),))

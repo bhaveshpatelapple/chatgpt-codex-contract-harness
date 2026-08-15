@@ -11,6 +11,15 @@ def tokenize(text):
     return frozenset(re.findall(r"[\w]+", unicodedata.normalize("NFKC", text).lower()))
 
 
+def _record_payload(record):
+    to_dict = getattr(record, "to_dict", None)
+    if callable(to_dict):
+        return to_dict()
+    if isinstance(record, dict):
+        return record
+    raise TypeError(f"retrieval record {type(record).__name__} is not serializable")
+
+
 @dataclass(frozen=True)
 class RetrievalQuery:
     text: str; task_kind: str; allowed_kinds: tuple[str, ...]; required_tags: tuple[str, ...]
@@ -48,7 +57,7 @@ def retrieve(candidates, query):
         if reason: excluded[record.id] = reason
     hits=[]; used=0
     for score, record in sorted(scored, key=lambda pair: (-pair[0], pair[1].id)):
-        size = len(canonical_json({"id": record.id, "score": round(score, 6)}).encode())
+        size = len(canonical_json({"id": record.id, "score": round(score, 6), "record": _record_payload(record)}).encode())
         if len(hits) >= query.item_limit: excluded[record.id] = "item_budget"; continue
         if used + size > query.byte_limit: excluded[record.id] = "byte_budget"; continue
         hits.append(RetrievalHit(record.id, score, record)); used += size

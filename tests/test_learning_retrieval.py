@@ -27,5 +27,13 @@ class RetrievalTests(unittest.TestCase):
             self.assertLessEqual(len(result.hits), 3)
             self.assertLessEqual(result.used_bytes, 800)
 
+    def test_byte_limit_counts_the_complete_selected_record(self):
+        oversized = ep(1, "replace greeting token " + "x" * 10_000)
+
+        result = retrieve((oversized,), self.query(byte_limit=200))
+
+        self.assertEqual((), result.hits)
+        self.assertEqual("byte_budget", result.exclusion_reasons[oversized.id])
+
 
 if __name__ == "__main__": unittest.main()
