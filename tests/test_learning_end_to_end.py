@@ -12,6 +12,8 @@ class EndToEndLearningTests(unittest.TestCase):
         self.assertTrue(proof["related_episode_retrieved"]); self.assertTrue(proof["unrelated_episode_excluded"])
         self.assertTrue(proof["related_skill_triggered"]); self.assertTrue(proof["unrelated_skill_not_triggered"])
         self.assertEqual("PASSED",proof["fresh_session_reuse"]); self.assertEqual(1,proof["fresh_session_attempts"])
+        self.assertTrue(proof["repair_context_bounded"]); self.assertEqual(["L0","L1","L2","L3","L4","L5"],proof["repair_context_layers"])
+        self.assertTrue(proof["learning_writes_orchestrated"])
         self.assertEqual(4,len(proof["ablations"])); self.assertEqual([10,100,1000],sorted(map(int,proof["bounded_context"])))
         self.assertTrue(all(x["used"]<=x["budget"] for x in proof["bounded_context"].values()))
 if __name__=="__main__": unittest.main()
