@@ -6,11 +6,12 @@
     1,
     2,
     3,
-    4
+    4,
+    5
   ],
-  "next_step": 5,
+  "next_step": 6,
   "verification": {
-    "step": 4,
+    "step": 5,
     "status": "PASSED",
     "command": [
       "python",

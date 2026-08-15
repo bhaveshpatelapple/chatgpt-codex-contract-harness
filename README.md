@@ -28,3 +28,6 @@ The ordered V0 plan lives in `.harness/plan.yaml`; resumable progress lives in
 Each active step must run a verification command through the state machine.
 Only a recorded zero exit code permits completion; a nonzero exit code leaves
 the step active in `VERIFY_FAILED` and blocks progression.
+
+Codex can follow the repo-local `contract-locked-execution` skill under
+`.agents/skills/` to operate this workflow consistently.

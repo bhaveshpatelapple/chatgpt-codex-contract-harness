@@ -1,0 +1,4 @@
+interface:
+  display_name: "Contract-Locked Execution"
+  short_description: "Operate a locked repository one safe step at a time"
+  default_prompt: "Use $contract-locked-execution to execute the next locked repository step."
