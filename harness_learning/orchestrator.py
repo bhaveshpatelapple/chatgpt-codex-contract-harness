@@ -1,4 +1,4 @@
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 import json, os
 from pathlib import Path
 from scripts.harness_verify import validate_contract
@@ -62,8 +62,9 @@ class LearningOrchestrator:
         output=self.dispatcher.perform(Role.REPAIR,Capability.WRITE_ATTEMPT,lambda:self.adapter.repair(self.run.task,self.run.attempts[-1].output,repaired_output))
         attempt=Attempt(stable_id("attempt",{"run":self.run.id,"number":len(self.run.attempts)+1,"output":output}),self.run.id,output,len(self.run.attempts)+1)
         self.run.attempts.append(attempt); self.run.active_attempt_id=attempt.id; self._save(); return attempt
-    def compose_context(self,role,request,references=()):
-        return self.dispatcher.perform(role,Capability.READ_CONTEXT,lambda:self.composer.compose(request,references,self.episode_store.all(),self.skill_registry.all()))
+    def compose_context(self,role,request,references=(),*,enable_l4=None,enable_l5=None):
+        ablated=replace(request,enable_l4=request.enable_l4 if enable_l4 is None else enable_l4,enable_l5=request.enable_l5 if enable_l5 is None else enable_l5)
+        return self.dispatcher.perform(role,Capability.READ_CONTEXT,lambda:self.composer.compose(ablated,references,self.episode_store.all(),self.skill_registry.all()))
     def _verified_receipt(self):
         receipt=self.last_receipt
         if not self.run or self.run.status!="COMPLETE" or not receipt or receipt.run_id!=self.run.id or receipt.attempt_id!=self.run.active_attempt_id or receipt.status!=VerificationStatus.PASSED:

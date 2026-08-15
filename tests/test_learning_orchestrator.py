@@ -2,7 +2,7 @@ import tempfile, unittest
 from pathlib import Path
 from harness_learning.context import ContextComposer, ContextRequest
 from harness_learning.episodes import EpisodeStore
-from harness_learning.models import HarnessError, VerificationStatus
+from harness_learning.models import Episode, HarnessError, Skill, VerificationStatus
 from harness_learning.orchestrator import LearningOrchestrator
 from harness_learning.roles import PermissionDenied, Role
 from harness_learning.skills import EvaluationCase, SkillCandidate, SkillRegistry
@@ -50,4 +50,23 @@ class OrchestratorTests(unittest.TestCase):
         with self.assertRaisesRegex(HarnessError,"MEMORY_UNVERIFIED"):
             self.o.admit_episode(Role.MEMORY,"replace","wrong","right","replace greeting token",("replace",),10)
         self.assertEqual((),self.episodes.all())
+
+    def test_orchestrator_applies_independent_read_only_ablations(self):
+        episode=Episode.create("replace","wrong","right","replace greeting token",("replace",),VerificationStatus.PASSED,"v1",1)
+        skill=Skill("skill_1","replace","replace greeting token",("replace","greeting","token"),("replace greeting token",),(episode.id,),.9,"replace")
+        self.episodes.store.upsert(episode); self.skills.store.upsert(skill)
+        base={"L0":({"id":"contract","text":"locked"},),"L1":({"id":"policy","text":"verify"},),"L2":({"id":"task","text":"replace"},)}
+        request=ContextRequest("replace greeting token","replace",10,True,True,base)
+
+        manifests={(l4,l5):self.o.compose_context(Role.PLANNER,request,enable_l4=l4,enable_l5=l5) for l4 in (False,True) for l5 in (False,True)}
+
+        self.assertEqual((0,0),(manifests[(False,False)].layers["L4"].used_items,manifests[(False,False)].layers["L5"].used_items))
+        self.assertEqual((0,1),(manifests[(False,True)].layers["L4"].used_items,manifests[(False,True)].layers["L5"].used_items))
+        self.assertEqual((1,0),(manifests[(True,False)].layers["L4"].used_items,manifests[(True,False)].layers["L5"].used_items))
+        self.assertEqual((1,1),(manifests[(True,True)].layers["L4"].used_items,manifests[(True,True)].layers["L5"].used_items))
+        baseline=manifests[(True,True)]
+        for manifest in manifests.values():
+            for layer in ("L0","L1","L2","L3"):
+                self.assertEqual(baseline.layers[layer].selected_ids,manifest.layers[layer].selected_ids)
+        self.assertEqual((episode,),self.episodes.all()); self.assertEqual((skill,),self.skills.all())
 if __name__=="__main__": unittest.main()
