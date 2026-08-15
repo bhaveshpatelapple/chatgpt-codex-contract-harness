@@ -36,7 +36,9 @@ class LearningOrchestrator:
             if r["active_attempt_id"] not in {a.id for a in attempts}: raise HarnessError("STORE_REFERENCE")
             obj.run=RunState(r["id"],r["task"],r["active_attempt_id"],attempts,r["status"])
         if data["last_receipt"]:
-            v=dict(data["last_receipt"]); v["status"]=VerificationStatus(v["status"]); obj.last_receipt=VerificationReceipt(**v)
+            v=dict(data["last_receipt"]); v["status"]=VerificationStatus(v["status"]); receipt=VerificationReceipt(**v)
+            if not obj.run or receipt.run_id!=obj.run.id or receipt.attempt_id!=obj.run.active_attempt_id: raise HarnessError("STORE_REFERENCE")
+            obj.last_receipt=receipt
         return obj
     def record_receipt(self,receipt):
         return self.dispatcher.perform(Role.VERIFIER,Capability.WRITE_VERIFICATION,lambda:self._record_receipt(receipt))

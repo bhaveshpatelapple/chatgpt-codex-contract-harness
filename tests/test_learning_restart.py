@@ -1,4 +1,4 @@
-import shutil, tempfile, unittest
+import json, shutil, tempfile, unittest
 from pathlib import Path
 from harness_learning.models import HarnessError, VerificationStatus
 from harness_learning.orchestrator import LearningOrchestrator
@@ -28,4 +28,16 @@ class RestartTests(unittest.TestCase):
                 LearningOrchestrator.open(root,contract,lock)
 
             self.assertEqual(before,(root/"runs.json").read_bytes())
+
+    def test_open_rejects_receipt_that_does_not_match_active_run(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp); original=LearningOrchestrator(root,ROOT/".harness/contract.yaml",ROOT/".harness/contract.lock")
+            run=original.start({"task_kind":"replace","input":"wrong","expected":"right"})
+            failed=original.verify(run.active_attempt_id,"wrong"); original.record_receipt(failed)
+            path=root/"runs.json"; envelope=json.loads(path.read_text(encoding="utf-8"))
+            envelope["last_receipt"]["attempt_id"]="attempt_foreign"
+            path.write_text(json.dumps(envelope,sort_keys=True,separators=(",",":"))+"\n",encoding="utf-8")
+
+            with self.assertRaisesRegex(HarnessError,"STORE_REFERENCE"):
+                LearningOrchestrator.open(root,ROOT/".harness/contract.yaml",ROOT/".harness/contract.lock")
 if __name__=="__main__": unittest.main()
