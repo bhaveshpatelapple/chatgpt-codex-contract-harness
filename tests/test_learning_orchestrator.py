@@ -1,13 +1,19 @@
 import tempfile, unittest
 from pathlib import Path
+from harness_learning.context import ContextComposer, ContextRequest
+from harness_learning.episodes import EpisodeStore
 from harness_learning.models import HarnessError, VerificationStatus
 from harness_learning.orchestrator import LearningOrchestrator
+from harness_learning.roles import PermissionDenied, Role
+from harness_learning.skills import EvaluationCase, SkillCandidate, SkillRegistry
 
 ROOT=Path(__file__).resolve().parents[1]
 class OrchestratorTests(unittest.TestCase):
     def setUp(self):
         self.tmp=tempfile.TemporaryDirectory(); self.addCleanup(self.tmp.cleanup)
-        self.o=LearningOrchestrator(Path(self.tmp.name),ROOT/".harness/contract.yaml",ROOT/".harness/contract.lock")
+        root=Path(self.tmp.name)
+        self.episodes=EpisodeStore(root/"episodes.json"); self.skills=SkillRegistry(root/"skills.json")
+        self.o=LearningOrchestrator(root,ROOT/".harness/contract.yaml",ROOT/".harness/contract.lock",composer=ContextComposer(),episode_store=self.episodes,skill_registry=self.skills)
     def test_failed_verification_blocks_and_repair_stays_on_run(self):
         run=self.o.start({"task_kind":"replace","input":"wrong value","expected":"hello world"})
         failed=self.o.verify(run.active_attempt_id,"wrong value")
@@ -20,4 +26,28 @@ class OrchestratorTests(unittest.TestCase):
         contract=Path(self.tmp.name)/"contract.yaml"; contract.write_text((ROOT/".harness/contract.yaml").read_text()+"\n# changed\n",encoding="utf-8")
         bad=LearningOrchestrator(Path(self.tmp.name)/"bad",contract,ROOT/".harness/contract.lock")
         with self.assertRaisesRegex(HarnessError,"CONTRACT_MISMATCH"): bad.start({"task_kind":"x","input":"x","expected":"x"})
+
+    def test_context_and_memory_operations_are_permissioned(self):
+        base={"L0":({"id":"contract","text":"locked"},),"L1":({"id":"policy","text":"verify"},),"L2":({"id":"task","text":"replace"},)}
+        request=ContextRequest("replace greeting token","replace",10,True,True,base)
+        self.assertEqual((),self.o.compose_context(Role.PLANNER,request).selected_records["L4"])
+        with self.assertRaisesRegex(PermissionDenied,"PERMISSION_DENIED"):
+            self.o.compose_context(Role.EXECUTOR,request)
+
+        run=self.o.start({"task_kind":"replace","input":"wrong","expected":"right"})
+        passed=self.o.verify(run.active_attempt_id,"right"); self.o.advance(passed)
+        episode=self.o.admit_episode(Role.MEMORY,"replace","wrong","right","replace greeting token",("replace",),10)
+        candidate=SkillCandidate("replace","replace greeting token",("replace","greeting","token"),("replace greeting token",),(episode.id,),(EvaluationCase("wrong","replace"),),.9,"replace")
+        self.assertEqual("PROMOTED",self.o.propose_skill(Role.MEMORY,candidate).decision)
+        before=self.episodes.all()
+        with self.assertRaisesRegex(PermissionDenied,"PERMISSION_DENIED"):
+            self.o.admit_episode(Role.PLANNER,"replace","a","b","replace a",("replace",),11)
+        self.assertEqual(before,self.episodes.all())
+
+    def test_memory_cannot_learn_from_failed_run(self):
+        run=self.o.start({"task_kind":"replace","input":"wrong","expected":"right"})
+        failed=self.o.verify(run.active_attempt_id,"wrong"); self.o.record_receipt(failed)
+        with self.assertRaisesRegex(HarnessError,"MEMORY_UNVERIFIED"):
+            self.o.admit_episode(Role.MEMORY,"replace","wrong","right","replace greeting token",("replace",),10)
+        self.assertEqual((),self.episodes.all())
 if __name__=="__main__": unittest.main()
