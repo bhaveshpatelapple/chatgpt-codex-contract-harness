@@ -5,6 +5,8 @@ from pathlib import Path
 
 import yaml
 
+from scripts.harness_verify import validate_contract
+
 
 STATE_FIELDS = {
     "version": str,
@@ -50,7 +52,19 @@ def validate_state(plan, state):
     return state
 
 
-def start_step(plan, state, step_id):
+def require_locked_contract(contract_path, lock_path):
+    return validate_contract(contract_path, lock_path)
+
+
+def start_step(
+    plan,
+    state,
+    step_id,
+    *,
+    contract_path=Path(".harness/contract.yaml"),
+    lock_path=Path(".harness/contract.lock"),
+):
+    require_locked_contract(contract_path, lock_path)
     validate_state(plan, state)
     if state["active_step"] is not None:
         raise ValueError(f"step {state['active_step']} is already active")
@@ -64,7 +78,16 @@ def start_step(plan, state, step_id):
     return updated
 
 
-def run_verification(plan, state, step_id, command):
+def run_verification(
+    plan,
+    state,
+    step_id,
+    command,
+    *,
+    contract_path=Path(".harness/contract.yaml"),
+    lock_path=Path(".harness/contract.lock"),
+):
+    require_locked_contract(contract_path, lock_path)
     validate_state(plan, state)
     if state["active_step"] != step_id:
         raise ValueError(f"step {step_id} is not active")
@@ -88,7 +111,15 @@ def run_verification(plan, state, step_id, command):
     return updated
 
 
-def complete_step(plan, state, step_id):
+def complete_step(
+    plan,
+    state,
+    step_id,
+    *,
+    contract_path=Path(".harness/contract.yaml"),
+    lock_path=Path(".harness/contract.lock"),
+):
+    require_locked_contract(contract_path, lock_path)
     validate_state(plan, state)
     if state["active_step"] != step_id:
         raise ValueError(f"step {step_id} is not active")
