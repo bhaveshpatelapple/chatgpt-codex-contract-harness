@@ -20,3 +20,7 @@ Validate that the locked contract has the required schema and has not changed:
 ```text
 python scripts/harness_verify.py
 ```
+
+The ordered V0 plan lives in `.harness/plan.yaml`; resumable progress lives in
+`.harness/state.json`. State transitions are implemented in
+`scripts/harness_state.py` and permit only one ordered step at a time.

@@ -1,0 +1,11 @@
+{
+  "version": "0.1",
+  "phase": "CHECKPOINT",
+  "active_step": null,
+  "completed_steps": [
+    1,
+    2,
+    3
+  ],
+  "next_step": 4
+}

@@ -1,0 +1,14 @@
+version: "0.1"
+steps:
+  - id: 1
+    name: Repository skeleton and execution policy
+  - id: 2
+    name: Contract schema and lock validation
+  - id: 3
+    name: Sequential plan and persistent execution state
+  - id: 4
+    name: Verification gate
+  - id: 5
+    name: Codex harness skill
+  - id: 6
+    name: End-to-end two-step demonstration
