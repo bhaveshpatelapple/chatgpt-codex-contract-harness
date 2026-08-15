@@ -1,5 +1,6 @@
 import importlib.util
 import json
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -34,6 +35,7 @@ def checkpoint_state():
         "active_step": None,
         "completed_steps": [1, 2],
         "next_step": 3,
+        "verification": None,
     }
 
 
@@ -59,8 +61,14 @@ class ExecutionStateTests(unittest.TestCase):
 
     def test_completes_the_active_step_and_advances(self):
         active = self.state_machine.start_step(PLAN, checkpoint_state(), 3)
+        verified = self.state_machine.run_verification(
+            PLAN,
+            active,
+            3,
+            [sys.executable, "-c", "raise SystemExit(0)"],
+        )
 
-        result = self.state_machine.complete_step(PLAN, active, 3)
+        result = self.state_machine.complete_step(PLAN, verified, 3)
 
         self.assertEqual(result["completed_steps"], [1, 2, 3])
         self.assertIsNone(result["active_step"])

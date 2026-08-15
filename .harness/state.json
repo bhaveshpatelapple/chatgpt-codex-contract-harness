@@ -5,7 +5,22 @@
   "completed_steps": [
     1,
     2,
-    3
+    3,
+    4
   ],
-  "next_step": 4
+  "next_step": 5,
+  "verification": {
+    "step": 4,
+    "status": "PASSED",
+    "command": [
+      "python",
+      "-m",
+      "unittest",
+      "discover",
+      "-s",
+      "tests",
+      "-v"
+    ],
+    "exit_code": 0
+  }
 }

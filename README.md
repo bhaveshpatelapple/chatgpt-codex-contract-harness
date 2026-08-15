@@ -24,3 +24,7 @@ python scripts/harness_verify.py
 The ordered V0 plan lives in `.harness/plan.yaml`; resumable progress lives in
 `.harness/state.json`. State transitions are implemented in
 `scripts/harness_state.py` and permit only one ordered step at a time.
+
+Each active step must run a verification command through the state machine.
+Only a recorded zero exit code permits completion; a nonzero exit code leaves
+the step active in `VERIFY_FAILED` and blocks progression.

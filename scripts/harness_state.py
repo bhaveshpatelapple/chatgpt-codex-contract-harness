@@ -1,5 +1,6 @@
 import copy
 import json
+import subprocess
 from pathlib import Path
 
 import yaml
@@ -11,6 +12,7 @@ STATE_FIELDS = {
     "active_step": (int, type(None)),
     "completed_steps": list,
     "next_step": (int, type(None)),
+    "verification": (dict, type(None)),
 }
 
 
@@ -58,6 +60,29 @@ def start_step(plan, state, step_id):
     updated = copy.deepcopy(state)
     updated["active_step"] = step_id
     updated["phase"] = "EXECUTE_ONE_STEP"
+    updated["verification"] = None
+    return updated
+
+
+def run_verification(plan, state, step_id, command):
+    validate_state(plan, state)
+    if state["active_step"] != step_id:
+        raise ValueError(f"step {step_id} is not active")
+    if not isinstance(command, list) or not command or not all(
+        isinstance(part, str) and part for part in command
+    ):
+        raise ValueError("verification command must be a non-empty list of strings")
+
+    result = subprocess.run(command, capture_output=True, text=True, check=False)
+    status = "PASSED" if result.returncode == 0 else "FAILED"
+    updated = copy.deepcopy(state)
+    updated["verification"] = {
+        "step": step_id,
+        "status": status,
+        "command": command,
+        "exit_code": result.returncode,
+    }
+    updated["phase"] = "DIFF_REVIEW" if status == "PASSED" else "VERIFY_FAILED"
     return updated
 
 
@@ -65,6 +90,13 @@ def complete_step(plan, state, step_id):
     validate_state(plan, state)
     if state["active_step"] != step_id:
         raise ValueError(f"step {step_id} is not active")
+    verification = state["verification"]
+    if not isinstance(verification, dict) or (
+        verification.get("step") != step_id
+        or verification.get("status") != "PASSED"
+        or verification.get("exit_code") != 0
+    ):
+        raise ValueError("verification must pass before completing a step")
 
     step_ids = plan_step_ids(plan)
     updated = copy.deepcopy(state)
