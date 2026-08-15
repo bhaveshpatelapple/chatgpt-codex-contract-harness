@@ -31,3 +31,9 @@ the step active in `VERIFY_FAILED` and blocks progression.
 
 Codex can follow the repo-local `contract-locked-execution` skill under
 `.agents/skills/` to operate this workflow consistently.
+
+Run the temporary two-step demonstration without changing repository state:
+
+```text
+python -m examples.two_step_demo
+```

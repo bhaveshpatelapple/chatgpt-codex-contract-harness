@@ -7,11 +7,12 @@
     2,
     3,
     4,
-    5
+    5,
+    6
   ],
-  "next_step": 6,
+  "next_step": null,
   "verification": {
-    "step": 5,
+    "step": 6,
     "status": "PASSED",
     "command": [
       "python",
