@@ -57,3 +57,22 @@ class Episode:
     @classmethod
     def from_dict(cls, data):
         data = dict(data); data["tags"] = tuple(data["tags"]); data["verification_status"] = VerificationStatus(data["verification_status"]); return cls(**data)
+
+@dataclass(frozen=True)
+class Skill:
+    id: str; name: str; purpose: str; trigger_tokens: tuple[str,...]; procedure: tuple[str,...]
+    source_episode_ids: tuple[str,...]; quality: float; task_kind: str; revision: int = 1
+    status: str = "PROMOTED"; kind: str = "skill"
+    verification_status: VerificationStatus = VerificationStatus.PASSED
+    created_sequence: int = 0; expiry_sequence: int|None = None
+    @property
+    def tags(self): return self.trigger_tokens
+    @property
+    def search_text(self): return " ".join((self.name,self.purpose,*self.trigger_tokens,*self.procedure))
+    def to_dict(self):
+        d=asdict(self); d["trigger_tokens"]=list(self.trigger_tokens); d["procedure"]=list(self.procedure); d["source_episode_ids"]=list(self.source_episode_ids); d["verification_status"]=self.verification_status.value; return d
+    @classmethod
+    def from_dict(cls,data):
+        d=dict(data)
+        for key in ("trigger_tokens","procedure","source_episode_ids"): d[key]=tuple(d[key])
+        d["verification_status"]=VerificationStatus(d["verification_status"]); return cls(**d)
