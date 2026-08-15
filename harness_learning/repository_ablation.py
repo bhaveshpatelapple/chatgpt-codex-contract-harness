@@ -72,6 +72,8 @@ def fixture_digest(path: Path) -> str:
         digest.update(len(relative).to_bytes(8, "big"))
         digest.update(relative)
         content = candidate.read_bytes()
+        if candidate.suffix == ".py":
+            content = content.replace(b"\r\n", b"\n")
         digest.update(len(content).to_bytes(8, "big"))
         digest.update(content)
     return digest.hexdigest()

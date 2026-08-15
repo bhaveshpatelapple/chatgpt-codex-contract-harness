@@ -16,6 +16,18 @@ FIXTURE = (
 
 
 class RepositoryCausalAblationTests(unittest.TestCase):
+    def test_fixture_digest_is_stable_across_git_line_endings(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            lf = root / "lf"
+            crlf = root / "crlf"
+            lf.mkdir()
+            crlf.mkdir()
+            (lf / "module.py").write_bytes(b"first\nsecond\n")
+            (crlf / "module.py").write_bytes(b"first\r\nsecond\r\n")
+
+            self.assertEqual(fixture_digest(lf), fixture_digest(crlf))
+
     def test_l5_intervention_changes_first_attempt_repository_result(self):
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
