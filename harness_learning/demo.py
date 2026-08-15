@@ -57,13 +57,23 @@ def run_learning_demo(root:Path):
         "repair_context_layers":list(repair_context.layers),"learning_writes_orchestrated":learned in reopened.episode_store.all() and promoted.skill in reopened.skill_registry.all(),"ablations":ablations,"bounded_context":bounds}
 
 def main():
-    parser=argparse.ArgumentParser(); parser.add_argument("command",choices=("run","inspect")); parser.add_argument("root",nargs="?"); args=parser.parse_args()
+    parser=argparse.ArgumentParser(); parser.add_argument("command",choices=("run","inspect","reuse")); parser.add_argument("root",nargs="?"); parser.add_argument("input",nargs="?"); parser.add_argument("expected",nargs="?"); args=parser.parse_args()
     if args.command=="run":
         if args.root: proof=run_learning_demo(Path(args.root))
         else:
             with tempfile.TemporaryDirectory() as tmp: proof=run_learning_demo(Path(tmp))
         print(json.dumps(proof,sort_keys=True,indent=2))
-    else:
+    elif args.command=="inspect":
         root=Path(args.root); episodes=EpisodeStore(root/"episodes.json"); skills=SkillRegistry(root/"skills.json"); run=LearningOrchestrator.open(root,ROOT/".harness/contract.yaml",ROOT/".harness/contract.lock")
         print(json.dumps({"episode_ids":[e.id for e in episodes.all()],"skill_ids":[s.id for s in skills.all()],"run_id":run.run.id},sort_keys=True))
+    else:
+        root=Path(args.root); learned=LearningOrchestrator.open(root,ROOT/".harness/contract.yaml",ROOT/".harness/contract.lock")
+        triggered=learned.skill_registry.trigger(query(args.input,"replace","skill"))
+        if not triggered.hits: raise HarnessError("SKILL_NOT_TRIGGERED")
+        skill=triggered.hits[0].record; output=args.input
+        if "replace wrong with hello" in skill.procedure: output=output.replace("wrong","hello")
+        fresh=LearningOrchestrator(root/"cross-process-reuse",ROOT/".harness/contract.yaml",ROOT/".harness/contract.lock")
+        run=fresh.start({"task_kind":"replace","input":output,"expected":args.expected}); receipt=fresh.verify(run.active_attempt_id,output)
+        if receipt.status==VerificationStatus.PASSED: fresh.advance(receipt)
+        print(json.dumps({"verification":receipt.status.value,"attempts":len(fresh.run.attempts),"skill_id":skill.id},sort_keys=True))
 if __name__=="__main__": main()
