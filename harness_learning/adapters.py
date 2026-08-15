@@ -1,0 +1,9 @@
+from typing import Protocol
+class ModelAdapter(Protocol):
+    def plan(self,task:dict)->dict: ...
+    def execute(self,plan:dict)->str: ...
+    def repair(self,task:dict,failed_output:str,desired_output:str)->str: ...
+class OfflineAdapter:
+    def plan(self,task): return {"task_kind":task["task_kind"],"input":task["input"]}
+    def execute(self,plan): return plan["input"]
+    def repair(self,task,failed_output,desired_output): return desired_output
