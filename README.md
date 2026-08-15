@@ -37,3 +37,18 @@ Run the temporary two-step demonstration without changing repository state:
 ```text
 python -m examples.two_step_demo
 ```
+
+## Deterministic learning harness
+
+The offline learning pipeline adds bounded L3 retrieval, verified L4 episodes,
+selective L5 skills, a skill-evolution gate, permissioned role orchestration,
+independent L4/L5 ablations, and atomic restart persistence.
+
+Run its controlled fail-repair-learn-restart-reuse proof with:
+
+```text
+python -m harness_learning.demo run
+```
+
+The proof uses temporary storage unless a target directory is supplied. Core
+behavior is deterministic and requires no network access or API credentials.
