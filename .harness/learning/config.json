@@ -1,0 +1,1 @@
+{"schema_version":1,"total_byte_budget":16384,"layers":{"L0":{"items":2,"bytes":2048},"L1":{"items":4,"bytes":2048},"L2":{"items":4,"bytes":3072},"L3":{"items":8,"bytes":4096},"L4":{"items":4,"bytes":3072},"L5":{"items":3,"bytes":3072}},"skill_minimum_quality":0.7,"skill_evaluation_ratio":0.8}
