@@ -1,4 +1,5 @@
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
+import json, os
 from pathlib import Path
 from scripts.harness_verify import validate_contract
 from .adapters import OfflineAdapter
@@ -14,7 +15,27 @@ class RunState: id:str; task:dict; active_attempt_id:str; attempts:list; status:
 
 class LearningOrchestrator:
     def __init__(self,root,contract_path,lock_path,adapter=None):
-        self.root=Path(root); self.contract_path=Path(contract_path); self.lock_path=Path(lock_path); self.adapter=adapter or OfflineAdapter(); self.dispatcher=RoleDispatcher(); self.run=None
+        self.root=Path(root); self.contract_path=Path(contract_path); self.lock_path=Path(lock_path); self.adapter=adapter or OfflineAdapter(); self.dispatcher=RoleDispatcher(); self.run=None; self.last_receipt=None
+    def _save(self):
+        self.root.mkdir(parents=True,exist_ok=True); path=self.root/"runs.json"; temporary=path.with_suffix(".json.tmp")
+        envelope={"schema_version":1,"kind":"runs","run":None if not self.run else {"id":self.run.id,"task":self.run.task,"active_attempt_id":self.run.active_attempt_id,"attempts":[asdict(a) for a in self.run.attempts],"status":self.run.status},"last_receipt":None if not self.last_receipt else {**asdict(self.last_receipt),"status":self.last_receipt.status.value}}
+        with temporary.open("w",encoding="utf-8",newline="\n") as handle:
+            handle.write(json.dumps(envelope,sort_keys=True,separators=(",",":"))+"\n"); handle.flush(); os.fsync(handle.fileno())
+        temporary.replace(path)
+    @classmethod
+    def open(cls,root,contract_path,lock_path,adapter=None):
+        obj=cls(root,contract_path,lock_path,adapter); path=Path(root)/"runs.json"
+        try: data=json.loads(path.read_text(encoding="utf-8"))
+        except (OSError,json.JSONDecodeError) as exc: raise HarnessError("STORE_CORRUPT",str(exc)) from exc
+        if data.get("schema_version")!=1 or data.get("kind")!="runs": raise HarnessError("STORE_SCHEMA")
+        if data["run"]:
+            r=data["run"]; attempts=[Attempt(**a) for a in r["attempts"]]
+            if r["active_attempt_id"] not in {a.id for a in attempts}: raise HarnessError("STORE_REFERENCE")
+            obj.run=RunState(r["id"],r["task"],r["active_attempt_id"],attempts,r["status"])
+        if data["last_receipt"]:
+            v=dict(data["last_receipt"]); v["status"]=VerificationStatus(v["status"]); obj.last_receipt=VerificationReceipt(**v)
+        return obj
+    def record_receipt(self,receipt): self.last_receipt=receipt; self._save(); return receipt
     def _contract(self):
         try: validate_contract(self.contract_path,self.lock_path)
         except (OSError,ValueError) as exc: raise HarnessError("CONTRACT_MISMATCH",str(exc)) from exc
@@ -22,7 +43,7 @@ class LearningOrchestrator:
         self._contract(); plan=self.dispatcher.perform(Role.PLANNER,Capability.WRITE_PLAN,lambda:self.adapter.plan(task))
         run_id=stable_id("run",task); output=self.dispatcher.perform(Role.EXECUTOR,Capability.WRITE_ATTEMPT,lambda:self.adapter.execute(plan))
         attempt=Attempt(stable_id("attempt",{"run":run_id,"number":1,"output":output}),run_id,output,1)
-        self.run=RunState(run_id,dict(task),attempt.id,[attempt]); return self.run
+        self.run=RunState(run_id,dict(task),attempt.id,[attempt]); self._save(); return self.run
     def verify(self,attempt_id,observed):
         if not self.run or attempt_id!=self.run.active_attempt_id: raise HarnessError("VERIFICATION_STALE")
         status=VerificationStatus.PASSED if observed==self.run.task["expected"] else VerificationStatus.FAILED
@@ -30,9 +51,9 @@ class LearningOrchestrator:
     def advance(self,receipt):
         if not self.run or receipt.run_id!=self.run.id or receipt.attempt_id!=self.run.active_attempt_id: raise HarnessError("VERIFICATION_STALE")
         if receipt.status!=VerificationStatus.PASSED: raise HarnessError("ADVANCE_BLOCKED")
-        self.run.status="COMPLETE"; return self.run
+        self.run.status="COMPLETE"; self.last_receipt=receipt; self._save(); return self.run
     def repair(self,failed_receipt,repaired_output):
         if not self.run or failed_receipt.run_id!=self.run.id or failed_receipt.attempt_id!=self.run.active_attempt_id or failed_receipt.status!=VerificationStatus.FAILED: raise HarnessError("REPAIR_STALE")
         output=self.dispatcher.perform(Role.REPAIR,Capability.WRITE_ATTEMPT,lambda:self.adapter.repair(self.run.task,self.run.attempts[-1].output,repaired_output))
         attempt=Attempt(stable_id("attempt",{"run":self.run.id,"number":len(self.run.attempts)+1,"output":output}),self.run.id,output,len(self.run.attempts)+1)
-        self.run.attempts.append(attempt); self.run.active_attempt_id=attempt.id; return attempt
+        self.run.attempts.append(attempt); self.run.active_attempt_id=attempt.id; self._save(); return attempt
