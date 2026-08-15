@@ -1,0 +1,44 @@
+version: "0.1"
+status: LOCKED
+
+goal: >-
+  Build the minimum usable Contract-Locked repository harness for
+  ChatGPT/Codex.
+
+required_features:
+  - repository-wide execution policy through AGENTS.md
+  - machine-readable locked contract
+  - sequential implementation plan
+  - persistent execution state
+  - verification gate
+  - one-step-at-a-time execution
+  - commit only after verification passes
+  - prevent progression after failed verification
+
+workflow:
+  - CONTRACT_LOCK
+  - PLAN
+  - EXECUTE_ONE_STEP
+  - VERIFY
+  - DIFF_REVIEW
+  - COMMIT
+  - CHECKPOINT
+  - NEXT_STEP
+  - FINAL_VERIFY
+
+invariants:
+  - contract cannot silently change
+  - only one implementation step may be active
+  - failed verification blocks progression
+  - completed steps require a git commit
+  - execution state survives ChatGPT conversation loss
+
+out_of_scope:
+  - vector database
+  - RAG
+  - L4 episodic memory
+  - L5 evolving skills
+  - multi-agent orchestration
+  - Agents SDK orchestration
+  - web UI
+  - cloud deployment

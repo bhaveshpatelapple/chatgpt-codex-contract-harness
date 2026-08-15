@@ -1,0 +1,9 @@
+[project]
+name = "chatgpt-codex-contract-harness"
+version = "0.1.0"
+description = "A contract-locked repository execution harness for ChatGPT/Codex"
+readme = "README.md"
+requires-python = ">=3.11"
+
+[tool.unittest]
+start-directory = "tests"
